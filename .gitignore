@@ -1,2 +1,6 @@
+# folders to exclude
 venv/
 __pycache__/
+
+# files to exclude
+DAFi.db

@@ -5,10 +5,23 @@ body {
 }
 
 .navbar-nav {
-    font-size: 18px;
+    font-size: 1.3em;
     font-weight: 600;
 }
 
 .navbar-brand {
-    font-size: 25px;
+    font-size: 2em;
+}
+
+.perfect-centering {
+   position: absolute;
+   top: 50%;
+   left:50%;
+   transform: translate(-50%,-50%);
+ }
+
+@media (min-width: 992px) {
+    .navbar-brand {
+        padding-left: 30px;
+    }
 }
