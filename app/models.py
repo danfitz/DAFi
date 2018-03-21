@@ -36,6 +36,8 @@ class Goal(db.Model):
     total_time = db.Column(db.Integer)
     rating = db.Column(db.Integer)
     total_rating = db.Column(db.Integer)
+    complete = db.Column(db.Boolean, default=False)
+    is_master = db.Column(db.Boolean, default=False)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
     children = db.relationship(
         "Goal", secondary=parents,
