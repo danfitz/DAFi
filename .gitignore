@@ -4,3 +4,4 @@ __pycache__/
 
 # files to exclude
 DAFi.db
+startup.sh

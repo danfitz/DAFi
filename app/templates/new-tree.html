@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block app_content %}
+    <div class="container perfect-centering">
+        <div class="row">
+            <div class="col-md-6 col-md-offset-3">
+                {{ form.hidden_tag() }}
+                {{ form.children.label }}
+                {{ form.children() }}                
+            </div>
+        </div>
+    </div>
+{% endblock %}

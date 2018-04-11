@@ -50,23 +50,26 @@ class Goal(db.Model):
     def __repr__(self):
         return "<Goal: {}>".format(self.goal)
 
+    # Relationship tests
+
     def is_parent(self, goal):
         return self.children.filter(parents.c.child_id == goal.id).count() > 0
 
     def is_child(self, goal):
         return self.parents.filter(parents.c.parent_id == goal.id).count() > 0
 
+    # Relationship creation
+
+    def make_master(self):
+        self.is_master = True
+
     def add_child(self, goal):
-        if not (self.is_parent(goal) or self.is_child(goal)):
+        if not self.is_child(goal):
             self.children.append(goal)
         else:
             return "'{}' is already connected to '{}'".format(self.goal, goal.goal)
 
-    def add_parent(self, goal):
-        if not (self.is_child(goal) or self.is_parent(goal)):
-            self.parents.append(goal)
-        else:
-            return "'{}' is already connected to '{}'".format(self.goal, goal.goal)
+    # Relationship removal
 
     def remove_rel(self, goal):
         if self.is_parent(goal):
