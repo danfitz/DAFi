@@ -7,8 +7,9 @@
             <div class="col-md-6 col-md-offset-3">
                 <form action="" method="post">
                     {{ form.hidden_tag() }}
-                    {{ form.childGoals() }}
-                    <button type="button" onClick="addChildGoal()">Add Goal</button>
+                    {{ form.master_goal.label }}
+                    <br>
+                    {{ form.master_goal() }}
                     {{ form.submit() }}
                 </form>
             </div>

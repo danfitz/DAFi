@@ -6,5 +6,6 @@ class MasterGoalForm(FlaskForm):
     master_goal = StringField("What's your goal?", validators=[DataRequired()])
     submit = SubmitField("Let's start")
 
-class ChildrenForm(FlaskForm):
-    children = FieldList(StringField("Is this your smallest goal?", validators=[DataRequired()], min_entries=3, max_entries=50))
+class ChildGoalsForm(FlaskForm):
+    childGoals = FieldList(StringField("Is this your smallest goal?", validators=[DataRequired()]), min_entries=1, max_entries=50)
+    submit = SubmitField("Continue")
