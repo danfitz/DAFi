@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block app_content %}
+    <div class="container perfect-centering">
+        <div class="row">
+            <div class="col-md-6 col-md-offset-3">
+
+                <h1>Your Goal: {{ master_goal.goal }}</h1>
+                <hr>
+                <p>Break down your goal into smaller parts. Ask yourself, "What do I need to do to achieve '{{master_goal.goal }}'?" Then with that smaller goal, ask yourself again, what do I need to do to achieve <em>that</em>?</p>
+                <p>Add each sub-goal as a new line.</p>
+                <hr> 
+
+                <form action="" method="post" style="clear: left;">
+                    {{ form.hidden_tag() }}
+                    {{ form.childGoals.label }}
+                    <br>
+                    {{ form.childGoals(cols=20, rows=10) }}
+                    <p style="float: right;">
+                        <em>Example:</em>
+                        <br>
+                        <b>Learn to knit</b>
+                        <br>
+                        Make a sweater
+                        <br>
+                        Follow knitting guidebook
+                        <br>
+                        Buy guidebook & knitting materials
+                    </p>
+                    <br>
+                    <!--<button type="button" onClick="addChildGoal()">Add Goal</button>-->
+                    <br>
+                    {{ form.submit() }}
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script type="text/javascript" src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% endblock %}
