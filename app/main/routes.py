@@ -41,32 +41,52 @@ def new_master():
 @bp.route("/master-breakdown", methods=["GET", "POST"])
 @login_required
 def master_breakdown():
-    # grab newest master goal added to user's goals
+    # Grab newest master goal added to user's goals
     master_goal = Goal.query.filter(Goal.user==current_user, Goal.is_master==True).order_by(Goal.id.desc()).first()
     form = ChildGoalsForm()
 
     if form.validate_on_submit():
-        # Add each goal one after the other, making the first into the child of the master, the next the child of the second, etc.
+        # Grab child goals from form data
         childGoals = form.childGoals.data.split("\r\n")
 
         for i in range(len(childGoals)):
-            g = Goal(goal=childGoals[i], user=current_user)
             if i == 0:
+                # If it's the first child goal, make it the child of the master goal (happens only once)
+                g = Goal(goal=childGoals[i], user=current_user)
                 master_goal.add_child(g)
                 db.session.add(master_goal)
                 db.session.add(g)
                 db.session.commit()
             else:
-                g2 = Goal.query.filter_by(goal=childGoals[i-1]).first()
+                # Otherwise, make the child goal a child of the goal before it
+                g = Goal.query.filter_by(goal=childGoals[i-1]).first()
+                g2 = Goal(goal=childGoals[i], user=current_user)
                 g.add_child(g2)
                 db.session.add(g)
                 db.session.add(g2)
                 db.session.commit()
 
-        return str(goals)
+        return redirect(url_for("main.tree", master_goal=master_goal.goal))
+
     return render_template("master-breakdown.html", master_goal=master_goal, form=form)
 
 @bp.route("/tree/<master_goal>")
 @login_required
 def tree(master_goal):
-    return render_template("tree.html")
+    # Create empty array
+    goals = []
+
+    # Append master goal
+    parent_goal = Goal.query.filter_by(goal=master_goal).first()
+    goals.append(parent_goal)
+
+    # Append child of master goal
+    child_goal = parent_goal.children[0]
+    goals.append(child_goal)
+
+    # Append children of children until no children remain
+    while child_goal.children.all() != []:
+        goals.append(child_goal.children[0])
+        child_goal = child_goal.children[0]
+
+    return render_template("tree.html", goals=goals)
