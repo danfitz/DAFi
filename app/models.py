@@ -52,27 +52,37 @@ class Goal(db.Model):
 
     # Relationship tests
 
-    def is_parent(self, goal):
+    def isParent(self, goal):
         return self.children.filter(parents.c.child_id == goal.id).count() > 0
 
-    def is_child(self, goal):
+    def isChild(self, goal):
         return self.parents.filter(parents.c.parent_id == goal.id).count() > 0
 
     # Relationship creation
 
-    def make_master(self):
+    def makeMaster(self):
         self.is_master = True
 
-    def add_child(self, goal):
-        if not self.is_child(goal):
+    def addChild(self, goal):
+        if not self.isChild(goal):
             self.children.append(goal)
         else:
             return "'{}' is already connected to '{}'".format(self.goal, goal.goal)
 
+    # Tree listing
+
+    def listTree(self, goal):
+        treeList = {goal: goal.children.all()}
+        for i in range(len(treeList[goal])):
+            treeBranch = {}
+            treeBranch
+            treeList.append(childGoal)
+
+
     # Relationship removal
 
-    def remove_rel(self, goal):
-        if self.is_parent(goal):
+    def removeRel(self, goal):
+        if self.isParent(goal):
             self.children.remove(goal)
-        elif self.is_child(goal):
+        elif self.isChild(goal):
             self.parents.remove(goal)

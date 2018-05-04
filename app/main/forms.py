@@ -3,7 +3,7 @@ from wtforms import StringField, SubmitField, FieldList, TextAreaField
 from wtforms.validators import DataRequired
 
 class MasterGoalForm(FlaskForm):
-    master_goal = StringField("What's your goal?", validators=[DataRequired()])
+    masterGoal = StringField("What's your goal?", validators=[DataRequired()])
     submit = SubmitField("Let's start")
 
 class ChildGoalsForm(FlaskForm):

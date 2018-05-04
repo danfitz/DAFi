@@ -26,11 +26,11 @@ def new_master():
 
     if form.validate_on_submit():
         # Creates new master goal
-        master_goal = Goal(goal=form.master_goal.data, user=current_user)
-        master_goal.make_master()
+        masterGoal = Goal(goal=form.masterGoal.data, user=current_user)
+        masterGoal.makeMaster()
 
         # Saves master goal to database
-        db.session.add(master_goal)
+        db.session.add(masterGoal)
         db.session.commit()
 
         # Finally, redirect to next prompt, the breakdown of the master goal
@@ -42,7 +42,7 @@ def new_master():
 @login_required
 def master_breakdown():
     # Grab newest master goal added to user's goals
-    master_goal = Goal.query.filter(Goal.user==current_user, Goal.is_master==True).order_by(Goal.id.desc()).first()
+    masterGoal = Goal.query.filter(Goal.user==current_user, Goal.is_master==True).order_by(Goal.id.desc()).first()
     form = ChildGoalsForm()
 
     if form.validate_on_submit():
@@ -53,40 +53,47 @@ def master_breakdown():
             if i == 0:
                 # If it's the first child goal, make it the child of the master goal (happens only once)
                 g = Goal(goal=childGoals[i], user=current_user)
-                master_goal.add_child(g)
-                db.session.add(master_goal)
+                masterGoal.addChild(g)
+                db.session.add(masterGoal)
                 db.session.add(g)
                 db.session.commit()
             else:
                 # Otherwise, make the child goal a child of the goal before it
                 g = Goal.query.filter_by(goal=childGoals[i-1]).first()
                 g2 = Goal(goal=childGoals[i], user=current_user)
-                g.add_child(g2)
+                g.addChild(g2)
                 db.session.add(g)
                 db.session.add(g2)
                 db.session.commit()
 
-        return redirect(url_for("main.tree", master_goal=master_goal.goal))
+        return redirect(url_for("main.tree", masterGoal=masterGoal.goal))
 
-    return render_template("master-breakdown.html", master_goal=master_goal, form=form)
+    return render_template("master-breakdown.html", masterGoal=masterGoal, form=form)
 
-@bp.route("/tree/<master_goal>")
+@bp.route("/tree/<masterGoal>")
 @login_required
-def tree(master_goal):
+def tree(masterGoal):
+    masterGoal = Goal.query.filter_by(goal=masterGoal).first()
+
+    # Redirects back to homepage if goal passed in URL isn't a master goal (i.e., goal has parents)
+    if masterGoal.parents.all() != []:
+        return redirect(url_for("main.index"))
+
     # Create empty array
-    goals = []
+    treeList = []
 
     # Append master goal
-    parent_goal = Goal.query.filter_by(goal=master_goal).first()
-    goals.append(parent_goal)
+    treeList.append(masterGoal)
 
     # Append child of master goal
-    child_goal = parent_goal.children[0]
-    goals.append(child_goal)
+    childGoals = masterGoal.children
+    for child in childGoals:
+        treeList.append(child)
 
     # Append children of children until no children remain
-    while child_goal.children.all() != []:
-        goals.append(child_goal.children[0])
-        child_goal = child_goal.children[0]
+    while childGoals.children.all() != []:
+        for child in childGoals:
+            treeList.append(child)
+            childGoals = childGoals.children[0]
 
-    return render_template("tree.html", goals=goals)
+    return render_template("tree.html", treeList=treeList)
