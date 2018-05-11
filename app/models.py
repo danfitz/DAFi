@@ -71,13 +71,19 @@ class Goal(db.Model):
 
     # Tree listing
 
-    def listTree(self, goal):
-        treeList = {goal: goal.children.all()}
-        for i in range(len(treeList[goal])):
-            treeBranch = {}
-            treeBranch
-            treeList.append(childGoal)
+    @staticmethod
+    def listTree(goal, treeList):
+        # Adds tuple containing current goal and children of goal into treeList
+        treeBranch = (goal, goal.children.all())
+        treeList.append(treeBranch)
 
+        # If current goal has children, recursively add tuples of THOSE children and THEIR children
+        if treeBranch[1] != []:
+            for i in range(len(treeBranch[1])):
+                Goal.listTree(treeBranch[1][i], treeList)
+
+        # Once the recursive function appends all children to treeList, return treeList
+        return treeList
 
     # Relationship removal
 

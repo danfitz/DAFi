@@ -85,15 +85,16 @@ def tree(masterGoal):
     # Append master goal
     treeList.append(masterGoal)
 
-    # Append child of master goal
-    childGoals = masterGoal.children
-    for child in childGoals:
-        treeList.append(child)
+    # Append first child of master goal
+    childGoal = masterGoal.children[0]
+    treeList.append(childGoal)
 
     # Append children of children until no children remain
-    while childGoals.children.all() != []:
-        for child in childGoals:
+    while childGoal.children.all() != []:
+        for child in childGoal.children:
             treeList.append(child)
-            childGoals = childGoals.children[0]
+        childGoal = childGoal.children[0]
 
-    return render_template("tree.html", treeList=treeList)
+    treeList2 = Goal.listTree(masterGoal, [])
+
+    return render_template("tree.html", treeList=treeList, treeList2=treeList2)
