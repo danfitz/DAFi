@@ -79,22 +79,22 @@ def tree(masterGoal):
     if masterGoal.parents.all() != []:
         return redirect(url_for("main.index"))
 
-    # Create empty array
-    treeList = []
+    jsonTree = Goal.jsonTree(masterGoal)
 
-    # Append master goal
-    treeList.append(masterGoal)
+    def jsonTreeToHtml(jsonTree):
+        if jsonTree["goal"].is_master == True:
+            html = "<ul><li data-jstree='{\"selected\": true, \"opened\": true}'>%s" % (jsonTree["goal"].goal)
+        else:
+            html = "<ul><li data-jstree='{\"opened\": true}'>%s" % (jsonTree["goal"].goal)
 
-    # Append first child of master goal
-    childGoal = masterGoal.children[0]
-    treeList.append(childGoal)
+        if jsonTree["childGoals"]:
+            for childGoalJson in jsonTree["childGoals"]:
+                html += jsonTreeToHtml(childGoalJson)
 
-    # Append children of children until no children remain
-    while childGoal.children.all() != []:
-        for child in childGoal.children:
-            treeList.append(child)
-        childGoal = childGoal.children[0]
+        html += "</ul>"
 
-    treeList2 = Goal.listTree(masterGoal, [])
+        return html
 
-    return render_template("tree.html", treeList=treeList, treeList2=treeList2)
+    treeHtml = jsonTreeToHtml(jsonTree)
+
+    return render_template("tree.html", jsonTree=jsonTree, treeHtml=treeHtml)

@@ -23,10 +23,10 @@ body {
  }
 
 .ui-sortable-handle {
-    margin: 0.2em;
+    /*margin: 0.2em;
     border: 0.2em solid black;
     list-style-type: none;
-    text-align: center;
+    text-align: center;*/
 }
 
 @media (min-width: 992px) {
