@@ -1,5 +1,6 @@
+import json
 from app import db
-from flask import render_template, redirect, current_app, url_for, request
+from flask import render_template, redirect, current_app, url_for, request, jsonify
 from app.main import bp
 from app.models import User, Goal
 from app.main.forms import MasterGoalForm, ChildGoalsForm
@@ -70,31 +71,73 @@ def master_breakdown():
 
     return render_template("master-breakdown.html", masterGoal=masterGoal, form=form)
 
-@bp.route("/tree/<masterGoal>")
+@bp.route("/tree/<masterGoal>", methods=["GET", "POST"])
 @login_required
 def tree(masterGoal):
-    masterGoal = Goal.query.filter_by(goal=masterGoal).first()
 
-    # Redirects back to homepage if goal passed in URL isn't a master goal (i.e., goal has parents)
-    if masterGoal.parents.all() != []:
-        return redirect(url_for("main.index"))
+    if request.method == "GET":
+        masterGoal = Goal.query.filter_by(goal=masterGoal).first()
 
-    jsonTree = Goal.jsonTree(masterGoal)
+        # Redirects back to homepage if goal passed in URL doesn't exist
+        # OR goal isn't a master goal
+        if not masterGoal or masterGoal.is_master == False:
+            return redirect(url_for("main.index"))
 
-    def jsonTreeToHtml(jsonTree):
-        if jsonTree["goal"].is_master == True:
-            html = "<ul><li data-jstree='{\"selected\": true, \"opened\": true}'>%s" % (jsonTree["goal"].goal)
-        else:
-            html = "<ul><li data-jstree='{\"opened\": true}'>%s" % (jsonTree["goal"].goal)
+        # Creates jsonTree
+        jsonTree = Goal.jsonTree(masterGoal)
 
-        if jsonTree["childGoals"]:
-            for childGoalJson in jsonTree["childGoals"]:
-                html += jsonTreeToHtml(childGoalJson)
+        # Function that returns an HTML-rendered version of jsonTree, optimized for jsTree
+        def jsonTreeToHtml(jsonTree):
+            goal = Goal.query.get(jsonTree["id"])
+            if goal.is_master == True:
+                html = "<ul><li data-goal-id=%s data-jstree='{\"selected\": true, \"opened\": true}'>%s" % (jsonTree["id"], jsonTree["text"])
+            else:
+                html = "<ul><li data-goal-id=%s data-jstree='{\"opened\": true}'>%s" % (jsonTree["id"], jsonTree["text"])
 
-        html += "</ul>"
+            if jsonTree["children"]:
+                for childGoalJson in jsonTree["children"]:
+                    html += jsonTreeToHtml(childGoalJson)
 
-        return html
+            html += "</ul>"
+            return html
 
-    treeHtml = jsonTreeToHtml(jsonTree)
+        treeHtml = jsonTreeToHtml(jsonTree)
 
-    return render_template("tree.html", jsonTree=jsonTree, treeHtml=treeHtml)
+        return render_template("tree.html", jsonTree=jsonTree, treeHtml=treeHtml)
+
+
+    elif request.method == "POST":
+        # Obtains JSON in jsTree from POST request sent in tree.html and converts it to JSON object
+        jsonTree = json.loads(request.form["json"])
+
+        def saveTree(jsonTree, masterFound=False):
+            # Grabs Goal object from id in JSON
+            goal = Goal.query.get(int(jsonTree["id"]))
+
+            # Makes first goal in JSON into master and all others NOT into master
+            if masterFound == False:
+                goal.is_master = True
+            else:
+                goal.is_master = False
+
+            # Removes all child goal relationships
+            if goal.children.all() != []:
+                for childGoal in goal.children.all():
+                    goal.removeRel(childGoal)
+
+            # Adds new relationships if goal has children
+            if jsonTree["children"]:
+                for childGoalJson in jsonTree["children"]:
+                    childGoal = Goal.query.get(int(childGoalJson["id"]))
+                    goal.addChild(childGoal)
+                    saveTree(childGoalJson, masterFound=True)
+
+            # Finally, add goal to db session
+            db.session.add(goal)
+
+        saveTree(jsonTree)
+        db.session.commit()
+
+        masterGoal = Goal.query.get(int(jsonTree["id"]))
+
+        return redirect(url_for("main.tree", masterGoal=masterGoal.goal))

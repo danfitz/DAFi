@@ -76,7 +76,7 @@ class Goal(db.Model):
         # Adds tuple containing current goal and children of goal into treeList
         treeBranch = (goal, goal.children.all())
         if treeBranch in treeList:
-            ## This if statement corrects an issue where each each call of listTree method
+            ## This if statement corrects an issue where each call of listTree method
             ## duplicates the contents of treeList
             return treeList
         treeList.append(treeBranch)
@@ -93,13 +93,13 @@ class Goal(db.Model):
     def jsonTree(goal):
         # Creates dictionary of goal containing its object and its children
         childGoals = goal.children.all()
-        jsonBranch = {"goal": goal, "childGoals": childGoals}
+        jsonBranch = {"id": goal.id, "text": goal.goal, "children": childGoals}
 
         # If the goal actually has children, recursively do the same thing for the child goals
         # END RESULT: nested JSON-formated dictionary with goals inside goals inside goals
         if childGoals:
             for childGoal, num in zip(childGoals, range(len(childGoals))):
-                jsonBranch["childGoals"][num] = Goal.jsonTree(childGoal)
+                jsonBranch["children"][num] = Goal.jsonTree(childGoal)
 
         # Returns the CURRENT dictionary
         return jsonBranch

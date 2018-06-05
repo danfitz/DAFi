@@ -5,8 +5,9 @@
     <div class="container perfect-centering">
         <div class="row">
             <div class="col-md-8 col-md-offset-2">
-                <div id="sortable">
-                    {{ treeHtml | safe }}
+                <button id="save">Save Tree</button>
+                <br><br>
+                <div id="jsTree">
                 </div>
             </div>
         </div>
@@ -17,18 +18,34 @@
     <script type="text/javascript">
         $(document).ready(function() {
 
-            $("#sortable").jstree({
+            // jsTree function + properties for jsTree
+            $("#jsTree").jstree({
                 "core": {
                     "check_callback": true,
                     "themes": {
                         "icons": false
                     },
-                    "expand_selected_onload": false
+                    "expand_selected_onload": false,
+                    "data": [ {{ jsonTree | safe }} ]
                 },
                 "plugins": ["contextmenu", "dnd", "unique"]
             
-            });
+            }).on("ready.jstree", function(){ $(this).jstree("open_all") }); // opens all jstree nodes
+            
+            // Makes save button send a POST request to the save_tree view function in main/routes.py
+            // POST request also sends JSON data in jsTree
+            $("#save").click(function() {
+                
+                json = $("#jsTree").jstree().get_json();
+                $.post(
+                    "{{ url_for('main.tree', masterGoal='save') }}",
+                    {"json": JSON.stringify(json[0])}
+                );
 
-        }); // End of JQuery
+            });
+                    
+        
+        });
+
     </script>
 {% endblock %}
