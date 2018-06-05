@@ -39,7 +39,14 @@
                 json = $("#jsTree").jstree().get_json();
                 $.post(
                     "{{ url_for('main.tree', masterGoal='save') }}",
-                    {"json": JSON.stringify(json[0])}
+                    {"json": JSON.stringify(json[0])},
+                    function(data,status) {
+                        if (status === "success") {
+                            alert("Tree saved!");
+                        } else {
+                            alert("Something went wrong: " + status);
+                        }
+                    }
                 );
 
             });

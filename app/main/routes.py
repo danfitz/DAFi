@@ -18,7 +18,9 @@ def favicon():
 @bp.route("/")
 @login_required
 def index():
-    return render_template("index.html")
+    masterGoals = Goal.query.filter_by(is_master=True)
+
+    return render_template("index.html", masterGoals=masterGoals)
 
 @bp.route("/new-master", methods=["GET", "POST"])
 @login_required

@@ -4,3 +4,5 @@ flask-migrate
 flask-login
 flask-wtf
 flask-bootstrap
+gunicorn
+psycopg2
