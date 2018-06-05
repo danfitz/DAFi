@@ -25,8 +25,8 @@ def load_user(id):
     return User.query.get(int(id))
 
 parents = db.Table("parents",
-    db.Column("parent_id", db.Integer, db.ForeignKey("user.id")),
-    db.Column("child_id", db.Integer, db.ForeignKey("user.id"))
+    db.Column("parent_id", db.Integer, db.ForeignKey("goal.id")),
+    db.Column("child_id", db.Integer, db.ForeignKey("goal.id"))
 )
 
 class Goal(db.Model):
