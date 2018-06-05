@@ -1,1 +1,1 @@
-web: flask db upgrade; gunicorn dafi:app
+web: flask db upgrade; gunicorn DAFi:app
