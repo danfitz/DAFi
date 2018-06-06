@@ -134,24 +134,22 @@ def tree(masterGoalId):
                 for childGoal in goal.children.all():
                     goal.removeRel(childGoal)
 
-                    # Removes goal (and all its children) from database if goal removed from JSON tree
-                    if jsonTree["children"]:
-                        print(childGoal.goal)
+                    # Removes goal (and all its children) from database if goal isn't in jsonTree
+                    def goalInJson(goal, jsonTree):
                         for childGoalJson in jsonTree["children"]:
-                            print(childGoalJson["text"])
-                            if childGoal.goal == childGoalJson["text"]:
-                                removeChild = False
-                    else:
-                        removeChild = True
+                            if goal.goal == childGoalJson["text"]:
+                                return True
+                            goalInJsonCheck(goal, childGoalJson)
+                        return False
 
-                    if removeChild == True:
-                        def removeChildren(goal):
-                            childGoals = goal.children.all()
-                            if childGoals != []:
-                                for childGoal in childGoals:
-                                    removeChildren(childGoal)
-                            db.session.delete(goal)
+                    def removeChildren(goal):
+                        childGoals = goal.children.all()
+                        if childGoals != []:
+                            for childGoal in childGoals:
+                                removeChildren(childGoal)
+                        db.session.delete(goal)
 
+                    if goalInJson(childGoal, jsonTree):
                         removeChildren(childGoal)
                         db.session.commit()
 
