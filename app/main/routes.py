@@ -139,7 +139,7 @@ def tree(masterGoalId):
                         for childGoalJson in jsonTree["children"]:
                             if goal.goal == childGoalJson["text"]:
                                 return True
-                            goalInJsonCheck(goal, childGoalJson)
+                            goalInJson(goal, childGoalJson)
                         return False
 
                     def removeChildren(goal):
