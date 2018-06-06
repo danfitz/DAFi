@@ -9,12 +9,14 @@ from flask_login import login_required, current_user
 import os
 from flask import send_from_directory
 
-# view function necessary for favicon to appear
+# VIEW FUNCTION: necessary for favicon to appear
 @bp.route('/favicon.ico')
 def favicon():
     return send_from_directory(os.path.join(current_app.root_path, 'static'),
                           'favicon.ico',mimetype='image/vnd.microsoft.icon')
 
+
+# VIEW FUNCTION: homepage
 @bp.route("/")
 @login_required
 def index():
@@ -22,6 +24,8 @@ def index():
 
     return render_template("index.html", masterGoals=masterGoals)
 
+
+# VIEW FUNCTION: step 1 of new goal tree - master goal form
 @bp.route("/new-master", methods=["GET", "POST"])
 @login_required
 def new_master():
@@ -37,15 +41,17 @@ def new_master():
         db.session.commit()
 
         # Finally, redirect to next prompt, the breakdown of the master goal
-        return redirect(url_for("main.master_breakdown"))
+        return redirect(url_for("main.master_breakdown", masterGoalId=masterGoal.id))
 
     return render_template("new-master.html", form=form)
 
-@bp.route("/master-breakdown", methods=["GET", "POST"])
+
+# VIEW FUNCTION: step 2 of new goal tree - master goal breakdown
+@bp.route("/master-breakdown/<masterGoalId>", methods=["GET", "POST"])
 @login_required
-def master_breakdown():
-    # Grab newest master goal added to user's goals
-    masterGoal = Goal.query.filter(Goal.user==current_user, Goal.is_master==True).order_by(Goal.id.desc()).first()
+def master_breakdown(masterGoalId):
+    # Grab master goal added to user's goals in step 1 (previous view function)
+    masterGoal = Goal.query.get(masterGoalId)
     form = ChildGoalsForm()
 
     if form.validate_on_submit():
@@ -55,30 +61,33 @@ def master_breakdown():
         for i in range(len(childGoals)):
             if i == 0:
                 # If it's the first child goal, make it the child of the master goal (happens only once)
-                g = Goal(goal=childGoals[i], user=current_user)
-                masterGoal.addChild(g)
+                childGoal = Goal(goal=childGoals[i], user=current_user)
+                masterGoal.addChild(childGoal)
                 db.session.add(masterGoal)
-                db.session.add(g)
+                db.session.add(childGoal)
                 db.session.commit()
             else:
                 # Otherwise, make the child goal a child of the goal before it
-                g = Goal.query.filter_by(goal=childGoals[i-1]).first()
-                g2 = Goal(goal=childGoals[i], user=current_user)
-                g.addChild(g2)
-                db.session.add(g)
-                db.session.add(g2)
+                goal = Goal.query.filter_by(goal=childGoals[i-1]).first()
+                childGoal = Goal(goal=childGoals[i], user=current_user)
+                goal.addChild(childGoal)
+                db.session.add(goal)
+                db.session.add(childGoal)
                 db.session.commit()
 
-        return redirect(url_for("main.tree", masterGoal=masterGoal.goal))
+        return redirect(url_for("main.tree", masterGoalId=masterGoal.id))
 
     return render_template("master-breakdown.html", masterGoal=masterGoal, form=form)
 
-@bp.route("/tree/<masterGoal>", methods=["GET", "POST"])
-@login_required
-def tree(masterGoal):
 
+# VIEW FUNCTION: single goal tree view
+@bp.route("/tree/<masterGoalId>", methods=["GET", "POST"])
+@login_required
+def tree(masterGoalId):
+
+    ### CREATES TREE VIEW ###
     if request.method == "GET":
-        masterGoal = Goal.query.filter_by(goal=masterGoal).first()
+        masterGoal = Goal.query.get(masterGoalId)
 
         # Redirects back to homepage if goal passed in URL doesn't exist
         # OR goal isn't a master goal
@@ -88,33 +97,30 @@ def tree(masterGoal):
         # Creates jsonTree
         jsonTree = Goal.jsonTree(masterGoal)
 
-        # Function that returns an HTML-rendered version of jsonTree, optimized for jsTree
-        def jsonTreeToHtml(jsonTree):
-            goal = Goal.query.get(jsonTree["id"])
-            if goal.is_master == True:
-                html = "<ul><li data-goal-id=%s data-jstree='{\"selected\": true, \"opened\": true}'>%s" % (jsonTree["id"], jsonTree["text"])
-            else:
-                html = "<ul><li data-goal-id=%s data-jstree='{\"opened\": true}'>%s" % (jsonTree["id"], jsonTree["text"])
+        return render_template("tree.html", jsonTree=jsonTree)
 
-            if jsonTree["children"]:
-                for childGoalJson in jsonTree["children"]:
-                    html += jsonTreeToHtml(childGoalJson)
-
-            html += "</ul>"
-            return html
-
-        treeHtml = jsonTreeToHtml(jsonTree)
-
-        return render_template("tree.html", jsonTree=jsonTree, treeHtml=treeHtml)
-
-
+    ### SAVES TREE VIEW IN DATABASE ###
     elif request.method == "POST":
-        # Obtains JSON in jsTree from POST request sent in tree.html and converts it to JSON object
+        # Obtains JSON string in jsTree from POST request (code in tree.html) and converts it to JSON object
         jsonTree = json.loads(request.form["json"])
 
         def saveTree(jsonTree, masterFound=False):
             # Grabs Goal object from id in JSON
-            goal = Goal.query.get(int(jsonTree["id"]))
+            # Otherwise, creates Goal object if goal doesn't already exist
+            print(jsonTree["id"])
+            goal = Goal.query.get(jsonTree["id"])
+            if not goal:
+                goal = Goal(goal=jsonTree["text"])
+                db.session.add(goal)
+                db.session.commit()
+                # Replaces id with database id rather than pre-placed id given by jsTree
+                jsonTree["id"] = goal.id
+
+            # Renames goal in database if it was changed in tree
+            if goal.goal != jsonTree["text"]:
+                goal.goal = jsonTree["text"]
+                db.session.add(goal)
+                db.session.commit()
 
             # Makes first goal in JSON into master and all others NOT into master
             if masterFound == False:
@@ -127,19 +133,50 @@ def tree(masterGoal):
                 for childGoal in goal.children.all():
                     goal.removeRel(childGoal)
 
-            # Adds new relationships if goal has children
+                    # Removes goal (and all its children) from database if goal removed from JSON tree
+                    if jsonTree["children"]:
+                        print(childGoal.goal)
+                        for childGoalJson in jsonTree["children"]:
+                            print(childGoalJson["text"])
+                            if childGoal.goal == childGoalJson["text"]:
+                                removeChild = False
+                    else:
+                        removeChild = True
+
+                    if removeChild == True:
+                        def removeChildren(goal):
+                            childGoals = goal.children.all()
+                            if childGoals != []:
+                                for childGoal in childGoals:
+                                    removeChildren(childGoal)
+                            db.session.delete(goal)
+
+                        removeChildren(childGoal)
+                        db.session.commit()
+
+            # Adds new relationships if goal's JSON has children
             if jsonTree["children"]:
                 for childGoalJson in jsonTree["children"]:
-                    childGoal = Goal.query.get(int(childGoalJson["id"]))
+                    # Grabs childGoal object from id in JSON
+                    # Otherwise, creates childGoal object if childGoal doesn't already exist
+                    childGoal = Goal.query.get(childGoalJson["id"])
+                    if not childGoal:
+                        childGoal = Goal(goal=childGoalJson["text"])
+                        db.session.add(childGoal)
+                        db.session.commit()
+                        # Replaces id with database id rather than pre-placed id given by jsTree
+                        childGoalJson["id"] = childGoal.id
+                    # Makes childGoal a child of goal
                     goal.addChild(childGoal)
+                    # Recursively loops through children of children of children
                     saveTree(childGoalJson, masterFound=True)
 
-            # Finally, add goal to db session
+            # Finally, add goal to database
             db.session.add(goal)
+            db.session.commit()
 
         saveTree(jsonTree)
-        db.session.commit()
 
         masterGoal = Goal.query.get(int(jsonTree["id"]))
 
-        return redirect(url_for("main.tree", masterGoal=masterGoal.goal))
+        return redirect(url_for("main.tree", masterGoalId=masterGoal.id))

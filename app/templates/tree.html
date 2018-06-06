@@ -38,7 +38,7 @@
                 
                 json = $("#jsTree").jstree().get_json();
                 $.post(
-                    "{{ url_for('main.tree', masterGoal='save') }}",
+                    "{{ url_for('main.tree', masterGoalId='save') }}",
                     {"json": JSON.stringify(json[0])},
                     function(data,status) {
                         if (status === "success") {
