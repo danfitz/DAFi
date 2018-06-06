@@ -105,11 +105,12 @@ def tree(masterGoalId):
         jsonTree = json.loads(request.form["json"])
 
         def saveTree(jsonTree, masterFound=False):
-            # Grabs Goal object from id in JSON
+            # Grabs Goal object from id in JSON if id is real
             # Otherwise, creates Goal object if goal doesn't already exist
-            print(jsonTree["id"])
-            goal = Goal.query.get(jsonTree["id"])
-            if not goal:
+            try:
+                int(jsonTree["id"])
+                goal = Goal.query.get(jsonTree["id"])
+            except ValueError:
                 goal = Goal(goal=jsonTree["text"])
                 db.session.add(goal)
                 db.session.commit()
@@ -157,10 +158,12 @@ def tree(masterGoalId):
             # Adds new relationships if goal's JSON has children
             if jsonTree["children"]:
                 for childGoalJson in jsonTree["children"]:
-                    # Grabs childGoal object from id in JSON
+                    # Grabs childGoal object from id in JSON if id is real
                     # Otherwise, creates childGoal object if childGoal doesn't already exist
-                    childGoal = Goal.query.get(childGoalJson["id"])
-                    if not childGoal:
+                    try:
+                        int(childGoalJson["id"])
+                        childGoal = Goal.query.get(childGoalJson["id"])
+                    except ValueError:
                         childGoal = Goal(goal=childGoalJson["text"])
                         db.session.add(childGoal)
                         db.session.commit()
